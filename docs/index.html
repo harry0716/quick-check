@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>學後即測</title>
+<meta name="description" content="課後即時測驗與錯誤觀念診斷平台">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <button class="brand" id="brand">學後即測　<span id="brandsub">Quick Check</span></button>
+    <div class="bar-sp"></div>
+    <div class="chip" id="barinfo"></div>
+    <div class="timer hidden" id="timer">--:--</div>
+    <button class="tbtn hidden" id="quitbtn">結束作答</button>
+  </div>
+  <div class="prog"><i id="progbar"></i></div>
+</div>
+
+<main>
+  <!-- ============ 課程選擇 ============ -->
+  <section id="v-courses">
+    <div class="hero">
+      <p class="eyebrow">課後即時測驗</p>
+      <h1>上完課，馬上知道自己哪裡不會</h1>
+      <p class="lede">選一份測驗開始作答。作答完成立刻看到分數、每一題的正解與解析，以及你最該補強的觀念。不需要註冊或登入。</p>
+    </div>
+    <h2 class="sec">選擇課程</h2>
+    <p class="sec-note">每一門課有各自的題庫與週次。</p>
+    <div class="cards" id="courselist"></div>
+    <p class="foot" id="foot-c"></p>
+  </section>
+
+  <!-- ============ 測驗選單 ============ -->
+  <section id="v-home" class="hidden">
+    <div class="hero">
+      <p class="eyebrow" id="h-eyebrow"></p>
+      <h1 id="h-title"></h1>
+      <p class="lede" id="h-lede"></p>
+    </div>
+
+    <dl class="stats">
+      <div><dt>題庫總數</dt><dd id="s-total">0<small>題</small></dd></div>
+      <div><dt id="s-a-lbl">分類 A</dt><dd id="s-a">0<small>題</small></dd></div>
+      <div><dt id="s-b-lbl">分類 B</dt><dd id="s-b">0<small>題</small></dd></div>
+      <div><dt>我的錯題本</dt><dd id="s-wrong">0<small>題</small></dd></div>
+    </dl>
+
+    <h2 class="sec">作答方式</h2>
+    <p class="sec-note">練習模式每題作答後立刻公布答案；測驗模式全部作答完才計分，並會計時，比較接近正式考試。</p>
+    <div class="pills" id="modepills">
+      <button class="pill" data-set="mode" data-val="practice">練習模式</button>
+      <button class="pill" data-set="mode" data-val="exam">測驗模式</button>
+      <button class="pill" data-set="shuffle">選項打亂</button>
+    </div>
+
+    <h2 class="sec">依單元測驗</h2>
+    <p class="sec-note" id="unit-note">上完課當天寫一次，考前再寫一次。</p>
+    <div class="grid-sm" id="unitlist"></div>
+
+    <h2 class="sec">綜合練習</h2>
+    <div class="cards" id="mixlist"></div>
+
+    <h2 class="sec">題庫瀏覽</h2>
+    <p class="sec-note">直接看題目、正解與解析，不計分。課前預習或考前總複習用，也可直接列印。</p>
+    <div class="cards">
+      <button class="card" data-go="browse"><b>開啟題庫瀏覽</b><span>全部題目與逐題解析</span></button>
+    </div>
+
+    <div class="linkbox" id="teacherbox">
+      <p><b>老師：</b>把下面的網址直接發給學生，開啟就是這一份測驗，不需要再選單元。</p>
+      <p id="deeplinks"></p>
+    </div>
+    <p class="foot" id="foot-h"></p>
+  </section>
+
+  <!-- ============ 身分填寫 ============ -->
+  <section id="v-identify" class="hidden">
+    <div class="hero">
+      <p class="eyebrow">開始作答前</p>
+      <h1 id="id-title">請先填寫你的身分</h1>
+      <p class="lede" id="id-lede">這份測驗的成績會回報給老師，用來檢討教學內容。請確實填寫，否則老師無法對應到你。</p>
+    </div>
+    <div class="idform">
+      <div class="idgrid">
+        <div class="field"><label for="f-class">班級</label><input id="f-class" autocomplete="off" placeholder="例：電子二甲"></div>
+        <div class="field"><label for="f-seat">座號</label><input id="f-seat" autocomplete="off" inputmode="numeric" placeholder="例：12"></div>
+        <div class="field"><label for="f-name">姓名</label><input id="f-name" autocomplete="off" placeholder="例：王小明"></div>
+      </div>
+      <div class="acts">
+        <button class="btn" id="startbtn">開始作答</button>
+        <button class="btn ghost" id="idbackbtn">回上一頁</button>
+      </div>
+      <p class="hint" id="id-hint"></p>
+    </div>
+  </section>
+
+  <!-- ============ 作答 ============ -->
+  <section id="v-quiz" class="hidden">
+    <div class="qcard">
+      <div class="qhead"><span class="qno" id="q-no">01</span><div class="qtags" id="q-tags"></div></div>
+      <p class="qstem" id="q-stem"></p>
+      <div class="choices" id="q-choices"></div>
+      <div class="fb hidden" id="q-fb"><p class="v" id="fb-v"></p><p id="fb-e"></p></div>
+    </div>
+    <div class="acts">
+      <button class="btn" id="prevbtn">上一題</button>
+      <button class="btn" id="nextbtn" disabled>下一題</button>
+      <span class="hint">鍵盤 1–4 選答，Enter 下一題</span>
+    </div>
+  </section>
+
+  <!-- ============ 結果 ============ -->
+  <section id="v-result" class="hidden">
+    <div class="hero"><p class="eyebrow" id="r-label"></p><h1 id="r-title">作答完成</h1></div>
+    <div class="score">
+      <div><span class="big" id="r-pct">0</span><span class="of">分</span></div>
+      <div style="flex:1;min-width:200px">
+        <div class="verdict" id="r-verdict"></div>
+        <p class="sub" id="r-sub"></p>
+      </div>
+    </div>
+
+    <div class="diag hidden" id="r-diag">
+      <h3>你最該補的觀念</h3>
+      <ol id="r-diaglist"></ol>
+    </div>
+
+    <div class="sendbox" id="r-sendbox">
+      <button class="btn ghost" id="sendbtn">回報成績給老師</button>
+      <span class="sendmsg" id="sendmsg"></span>
+    </div>
+    <div class="codebox">
+      <input id="r-code" readonly aria-label="成績回報碼">
+      <button class="btn ghost" id="copybtn">複製回報碼</button>
+    </div>
+    <p class="sec-note" style="margin-top:8px">若回報失敗，把上面這串複製給老師也可以。</p>
+
+    <h2 class="sec">逐題檢討</h2>
+    <div class="rev" id="r-rev"></div>
+    <div class="acts">
+      <button class="btn" id="againbtn">再測一次</button>
+      <button class="btn ghost" id="wrongbtn2">只練這次的錯題</button>
+      <button class="btn ghost" id="homebtn">回測驗選單</button>
+    </div>
+  </section>
+
+  <!-- ============ 題庫瀏覽 ============ -->
+  <section id="v-browse" class="hidden">
+    <div class="hero"><p class="eyebrow">題庫瀏覽</p><h1 id="b-title">全部題目與解析</h1></div>
+    <div class="pills" id="browsefilter"></div>
+    <div id="browselist" style="margin-top:18px"></div>
+    <div class="acts"><button class="btn ghost" id="bbackbtn">回測驗選單</button></div>
+  </section>
+
+  <!-- ============ 錯誤 ============ -->
+  <section id="v-error" class="hidden">
+    <div class="hero"><p class="eyebrow">出了點問題</p><h1>載入失敗</h1></div>
+    <div class="err" id="errmsg"></div>
+    <div class="acts"><button class="btn" id="errhome">回首頁</button></div>
+  </section>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
