@@ -28,9 +28,9 @@
   <!-- ============ 課程選擇 ============ -->
   <section id="v-courses">
     <div class="hero">
-      <p class="eyebrow">課後即時測驗</p>
-      <h1>上完課，馬上知道自己哪裡不會</h1>
-      <p class="lede">選一份測驗開始作答。作答完成立刻看到分數、每一題的正解與解析，以及你最該補強的觀念。不需要註冊或登入。</p>
+      <p class="eyebrow">教師後台</p>
+      <h1>課程與成績管理</h1>
+      <p class="lede">教師請選擇課程，提供指定測驗連結給學生。學生不需註冊或登入。</p>
     </div>
     <h2 class="sec">選擇課程</h2>
     <p class="sec-note">每一門課有各自的題庫與週次。</p>
@@ -53,7 +53,13 @@
       <div><dt>我的錯題本</dt><dd id="s-wrong">0<small>題</small></dd></div>
     </dl>
 
-    <h2 class="sec">作答方式</h2>
+    <div class="linkbox" id="teacherbox">
+      <p><b>老師：</b>把下面的網址直接發給學生，開啟就是這一份測驗，不需要再選單元。</p>
+      <label>評量類別 <select id="link-assessment"><option value="class">課堂練習</option><option value="midterm">期中考</option><option value="final">期末考</option></select></label><details><summary>展開各週與綜合測驗連結</summary><div id="deeplinks"></div></details>
+    </div>
+
+    <div id="teacher-dashboard"></div>
+    <h2 class="sec">教師預覽方式</h2>
     <p class="sec-note">練習模式每題作答後立刻公布答案；測驗模式全部作答完才計分，並會計時，比較接近正式考試。</p>
     <div class="pills" id="modepills">
       <button class="pill" data-set="mode" data-val="practice">練習模式</button>
@@ -74,10 +80,6 @@
       <button class="card" data-go="browse"><b>開啟題庫瀏覽</b><span>全部題目與逐題解析</span></button>
     </div>
 
-    <div class="linkbox" id="teacherbox">
-      <p><b>老師：</b>把下面的網址直接發給學生，開啟就是這一份測驗，不需要再選單元。</p>
-      <p id="deeplinks"></p>
-    </div>
     <p class="foot" id="foot-h"></p>
   </section>
 
@@ -143,12 +145,13 @@
     </div>
     <p class="sec-note" style="margin-top:8px">若回報失敗，把上面這串複製給老師也可以。</p>
 
+    <p class="sec-note" id="r-status" role="status"></p>
     <h2 class="sec">逐題檢討</h2>
     <div class="rev" id="r-rev"></div>
     <div class="acts">
       <button class="btn" id="againbtn">再測一次</button>
       <button class="btn ghost" id="wrongbtn2">只練這次的錯題</button>
-      <button class="btn ghost" id="homebtn">回測驗選單</button>
+      <button class="btn ghost" id="homebtn">回教師後台</button>
     </div>
   </section>
 
@@ -169,6 +172,7 @@
 </main>
 
 <script src="assets/config.js"></script>
+<script src="assets/teacher.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

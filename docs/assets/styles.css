@@ -173,5 +173,15 @@ h2.sec{font-family:var(--serif);font-size:1.12rem;font-weight:700;margin:34px 0 
 .linkbox p{margin:0 0 8px;font-size:.86rem;color:var(--ink-2)}
 .linkbox code{font-family:var(--mono);font-size:.78rem;background:var(--surface);padding:2px 6px;border:1px solid var(--rule)}
 .foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);font-size:.78rem;color:var(--ink-3)}
+.grade-filters{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.grade-filters label,.teacher-link label{display:flex;flex-direction:column;gap:5px}
+select,input{max-width:100%;padding:8px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);font:inherit}
+.grade-scroll{overflow:auto;margin-top:16px;max-height:540px}
+table{border-collapse:collapse;width:100%;font-size:.85rem;white-space:nowrap}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--rule)}
+th{position:sticky;top:0;background:var(--surface-2)}
+.teacher-link{display:grid;grid-template-columns:minmax(100px,1fr) minmax(120px,3fr) auto;gap:8px;align-items:end;border-bottom:1px solid var(--rule);padding:12px 0}
+.teacher-link b{grid-column:1/-1}.teacher-link label{grid-column:1/3}
+.brand:disabled{cursor:default;opacity:1}
 .err{background:var(--bad-soft);border-left:3px solid var(--bad);padding:14px 18px;font-size:.9rem}
 @media print{.bar,.acts,.foot,.sendbox,.codebox{display:none}body{background:#fff}}

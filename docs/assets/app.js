@@ -42,6 +42,9 @@
   var S = null;          // 目前作答階段
   var pendingSet = null; // 等待填身分的測驗
   var tick = null;
+  var route = new URLSearchParams(location.search);
+  var student = route.has('s') || route.has('b');
+  var assessment = /^(class|midterm|final)$/.test(route.get('a')) ? route.get('a') : 'class';
 
   /* ---------------- 畫面切換 ---------------- */
   var VIEWS = ['courses', 'home', 'identify', 'quiz', 'result', 'browse', 'error'];
@@ -80,6 +83,11 @@
   }
 
   function boot() {
+    if (student) {
+      ['homebtn', 'idbackbtn', 'errhome'].forEach(function(id) { $(id).classList.add('hidden'); });
+      $('brand').disabled = true;
+      $('v-courses').classList.add('hidden');
+    }
     $('brand').textContent = '';
     $('brand').appendChild(document.createTextNode((CFG.siteTitle || '學後即測') + '　'));
     var sp = document.createElement('span');
@@ -94,8 +102,10 @@
       if (q.b) {
         loadBank(q.b).then(function () {
           if (q.s && findSet(q.s)) startOrIdentify(q.s, q.m === 'practice' ? 'practice' : 'exam');
-          else renderHome();
+          else fail('連結不完整或測驗不存在，請向老師索取本週連結。');
         }).catch(function (e) { fail('找不到這門課的題庫（' + q.b + '）。' + e.message); });
+      } else if (student) {
+        fail('連結不完整，請向老師索取本週連結。');
       } else if (m.banks && m.banks.length === 1) {
         loadBank(m.banks[0].id).then(renderHome).catch(function (e) { fail(e.message); });
       } else {
@@ -121,6 +131,7 @@
 
   /* ---------------- 課程選擇 ---------------- */
   function renderCourses() {
+    if (student) return;
     $('courselist').innerHTML = (MANIFEST.banks || []).map(function (b) {
       return '<button class="card" data-bank="' + esc(b.id) + '"><b>' + esc(b.title) + '</b>' +
         '<span>' + esc(b.subtitle || '') + '</span></button>';
@@ -136,6 +147,7 @@
   }
   function poolOf(set) {
     var qs = BANK.questions;
+    if (set.reviewIds) return shuffled(qs.filter(function(q) { return set.reviewIds.indexOf(String(q.id)) >= 0; }));
     if (set.wrongOnly) {
       var w = {};
       BS.wrong.forEach(function (i) { w[i] = 1; });
@@ -149,9 +161,10 @@
 
   /* ---------------- 測驗選單 ---------------- */
   function renderHome() {
-    $('h-eyebrow').textContent = BANK.subtitle || '';
+    if (student) return fail('本次作答已結束，請等待老師提供下一份連結。');
+    $('h-eyebrow').textContent = '教師後台 · ' + (BANK.subtitle || '');
     $('h-title').textContent = BANK.title || '';
-    $('h-lede').textContent = BANK.blurb || '';
+    $('h-lede').textContent = '選擇本週測驗、複製學生連結，並集中檢視課堂與考試成績。';
     $('b-title').textContent = (BANK.title || '') + '　全部題目與解析';
 
     var qs = BANK.questions;
@@ -193,10 +206,7 @@
       b.setAttribute('aria-pressed', (k === 'mode' ? store.mode === b.dataset.val : !!store.shuffle) ? 'true' : 'false');
     });
 
-    var links = (BANK.units || []).slice(0, 3).map(function (u) {
-      return '<code>' + esc(deepLink(u.id, 'exam')) + '</code>';
-    }).join('<br>');
-    $('deeplinks').innerHTML = links + '<br><span style="color:var(--ink-3)">把網址結尾的 <code>s=</code> 換成其他單元代號，<code>m=</code> 可設 exam 或 practice。</span>';
+    window.renderTeacherLinks(BANK, deepLink);
 
     view('home');
   }
@@ -210,14 +220,14 @@
 
   /* ---------------- 身分 ---------------- */
   function needIdentity(mode) {
-    var r = CFG.requireIdentity || 'exam';
+    var r = CFG.requireIdentity || 'always';
     if (r === 'never') return false;
-    if (!CFG.endpoint) return false;
+    if (!student) return false;
     return r === 'always' || mode === 'exam';
   }
   function startOrIdentify(setId, mode) {
     var set = findSet(setId);
-    if (!set) return renderHome();
+    if (!set) return fail('找不到指定測驗，請向老師索取連結。');
     if (poolCount(set) === 0) return renderHome();
     mode = mode || store.mode;
     if (needIdentity(mode)) {
@@ -226,7 +236,8 @@
       $('f-class').value = (store.id && store.id.cls) || '';
       $('f-seat').value = (store.id && store.id.seat) || '';
       $('f-name').value = (store.id && store.id.name) || '';
-      $('id-hint').textContent = set.timeSec ? ('本測驗限時 ' + Math.round(set.timeSec / 60) + ' 分鐘，開始後計時。') : '';
+      $('id-lede').textContent = CFG.endpoint ? '請填寫班級、座號與姓名，作答成績將回報給老師。' : '請填寫班級、座號與姓名。老師尚未啟用線上收件，完成後請保留回報碼。';
+      $('id-hint').textContent = mode === 'exam' && set.timeSec ? ('本測驗限時 ' + Math.round(set.timeSec / 60) + ' 分鐘，開始後計時。') : '';
       view('identify');
       setTimeout(function () { $('f-class').focus(); }, 60);
     } else {
@@ -240,6 +251,7 @@
     if (!qs.length) return renderHome();
     S = {
       set: set, mode: mode, i: 0, answers: [], startedAt: Date.now(),
+      attempt: crypto.randomUUID(), assessment: assessment, review: !!set.reviewIds,
       items: qs.map(function (q) {
         var order = store.shuffle ? shuffled([0, 1, 2, 3]) : [0, 1, 2, 3];
         order = order.filter(function (k) { return k < q.o.length; });
@@ -329,6 +341,7 @@
 
   /* ---------------- 結果 ---------------- */
   function finish(timedOut) {
+    if (!S || S.result) return;
     stopTimer();
     var ok = 0, missed = [], byTopic = {};
     var wrongSet = {};
@@ -394,7 +407,7 @@
         '<p class="ex">' + esc(it.q.e || '') + '</p></div>';
     }).join('');
 
-    var canSend = !!CFG.endpoint;
+    var canSend = !!CFG.endpoint && student && !S.review;
     $('r-sendbox').classList.toggle('hidden', !canSend);
     $('sendmsg').textContent = '';
     $('sendmsg').className = 'sendmsg';
@@ -402,13 +415,18 @@
     $('wrongbtn2').disabled = missed.length === 0;
 
     view('result');
-    if (canSend && S.mode === 'exam') sendResult();
+    if (canSend) sendResult();
+    $('r-status').textContent = S.review ? '錯題重練不列入評分。' : (!student ? '教師預覽不回報成績。' : (CFG.endpoint ? '完成後請確認成績已回報，再關閉頁面，等待老師提供下一份連結。' : '尚未啟用線上收件，請複製回報碼交給老師。'));
   }
 
   /* ---------------- 回報成績（JSONP，避開 CORS） ---------------- */
   var jsonpSeq = 0;
   function sendResult() {
-    if (!CFG.endpoint || !S || !S.result) return;
+    if (!CFG.endpoint || !S || !S.result || !student || S.review || S.sending || S.sent) return;
+    S.sending = true;
+    var session = S;
+    $('againbtn').disabled = true;
+    $('wrongbtn2').disabled = true;
     $('sendbtn').disabled = true;
     $('sendmsg').className = 'sendmsg';
     $('sendmsg').textContent = '回報中…';
@@ -417,6 +435,8 @@
     var cb = 'qc_cb_' + (++jsonpSeq) + '_' + Date.now();
     var q = {
       callback: cb,
+      attempt: S.attempt,
+      assessment: S.assessment,
       bank: BANK.id,
       bankTitle: BANK.title || '',
       set: S.set.id,
@@ -450,6 +470,11 @@
     }, 12000);
 
     function cleanup() {
+      session.sending = false;
+      if (S === session) {
+        $('againbtn').disabled = false;
+        $('wrongbtn2').disabled = session.result.missed.length === 0;
+      }
       clearTimeout(timer);
       try { delete window[cb]; } catch (e) { window[cb] = undefined; }
       if (script.parentNode) script.parentNode.removeChild(script);
@@ -458,7 +483,9 @@
       if (done) return;
       done = true;
       cleanup();
+      if (S !== session) return;
       if (res && res.ok) {
+        session.sent = true;
         $('sendmsg').className = 'sendmsg ok';
         $('sendmsg').textContent = '已回報給老師。';
         $('sendbtn').textContent = '已回報';
@@ -485,6 +512,7 @@
   /* ---------------- 題庫瀏覽 ---------------- */
   var bf = 'all';
   function renderBrowse() {
+    if (student) return;
     var units = BANK.units || [];
     $('browsefilter').innerHTML =
       '<button class="pill" data-bf="all" aria-pressed="' + (bf === 'all') + '">全部</button>' +
@@ -511,6 +539,7 @@
 
   /* ---------------- 事件 ---------------- */
   document.addEventListener('click', function (e) {
+    if (student) return;
     var bankBtn = e.target.closest('[data-bank]');
     if (bankBtn) { loadBank(bankBtn.dataset.bank).then(renderHome).catch(function (err) { fail(err.message); }); return; }
 
@@ -531,7 +560,7 @@
 
   $('startbtn').addEventListener('click', function () {
     var cls = $('f-class').value.trim(), seat = $('f-seat').value.trim(), name = $('f-name').value.trim();
-    if (!cls || !name) { $('id-hint').textContent = '班級與姓名為必填。'; return; }
+    if (!cls || !seat || !name) { $('id-hint').textContent = '班級、座號與姓名為必填。'; return; }
     store.id = { cls: cls, seat: seat, name: name };
     save();
     begin(pendingSet.set, pendingSet.mode);
@@ -539,14 +568,14 @@
   $('idbackbtn').addEventListener('click', renderHome);
   $('nextbtn').addEventListener('click', next);
   $('prevbtn').addEventListener('click', prev);
-  $('againbtn').addEventListener('click', function () { startOrIdentify(S.set.id, S.mode); });
+  $('againbtn').addEventListener('click', function () { if (S.review) begin(S.set, 'practice'); else startOrIdentify(S.set.id, S.mode); });
   $('wrongbtn2').addEventListener('click', function () {
     var ids = {};
     S.result.missed.forEach(function (i) { ids[i] = 1; });
-    var set = { id: S.set.id + '-miss', label: '本次錯題', title: '本次錯題重練' };
+    var set = { id: S.set.id + '-miss', label: '本次錯題', title: '本次錯題重練', reviewIds: Object.keys(ids) };
     var qs = BANK.questions.filter(function (q) { return ids[q.id]; });
     S = {
-      set: set, mode: 'practice', i: 0, answers: [], startedAt: Date.now(),
+      set: set, review: true, mode: 'practice', i: 0, answers: [], startedAt: Date.now(),
       items: shuffled(qs).map(function (q) {
         var order = store.shuffle ? shuffled([0, 1, 2, 3]) : [0, 1, 2, 3];
         return { q: q, order: order, ans: order.indexOf(q.a) };
@@ -558,6 +587,7 @@
   $('bbackbtn').addEventListener('click', renderHome);
   $('errhome').addEventListener('click', function () { location.href = location.pathname; });
   $('brand').addEventListener('click', function () {
+    if (student) return;
     if (MANIFEST && (MANIFEST.banks || []).length > 1) renderCourses(); else if (BANK) renderHome();
   });
   $('quitbtn').addEventListener('click', function () {
