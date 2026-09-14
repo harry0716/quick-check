@@ -1,5 +1,9 @@
 # 學後即測　Quick Check
 
+本專案已獨立整理為 **iPas_AI應用規劃師初級題庫系統**。請先閱讀 [專案入口與搬移說明](00_專案入口與搬移說明.md) 及 [維護交接](maintenance/HANDOFF.md)。題庫主檔在 `data/`，完整原始資料與既有文件在本機 `local-materials/`。
+
+目前維持 18 週：W01–W15 為主題練習（各 10 題），W16 科二 30 題、W17 科一 40 題、W18 科二 40 題。後三週重用既有 150 題，不另造新題。
+
 課後即時測驗與錯誤觀念診斷平台。純靜態網站，放 GitHub Pages 就能用，**學生不需要註冊或登入，知道網址就能作答**。
 
 - 作答完立刻看到分數、每一題的正解與解析
@@ -50,7 +54,7 @@ python3 -m http.server 8000
 | 科目一模擬考 | `https://…/quick-check/?b=cchs-ipas-2026&s=k1&m=exam` |
 
 - `b` = 課程代號（見 `docs/banks/manifest.json`）
-- `s` = 測驗代號（`w01`–`w15`、`k1`、`k2`、`mix20`）
+- `s` = 測驗代號（`w01`–`w18`、`k1`、`k2`、`mix20`）
 - `m` = `exam`（測驗模式，計時、最後才給分）或 `practice`（練習模式，每題立刻對答案）
 
 網站首頁的「老師」區塊列出所有單元的練習與測驗連結，並提供複製按鈕。選擇評量類別後，連結會帶上 `a=class`（課堂）、`a=midterm`（期中）或 `a=final`（期末）。未帶 `a` 的既有學生連結預設為課堂練習。
@@ -156,7 +160,7 @@ python3 -m http.server 8000
 
 3. 推上 GitHub。首頁會自動出現課程選單（只有一門課時會直接進入該課程）。
 
-`build_site.py` 是把既有的 `bank.json` 轉成上面格式的產生器，新增課程時可以照著改。
+`build_site.py` 使用本專案 `data/bank.json` 與 `data/weeks.json`，不依賴上層課程目錄。修改主檔後執行 `python build_site.py`，不要只修改會被重建覆蓋的 `docs/banks/`。新增課程時可依既有流程擴充產生器。
 
 ---
 

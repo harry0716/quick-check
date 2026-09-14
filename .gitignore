@@ -2,3 +2,12 @@
 Thumbs.db
 node_modules/
 __pycache__/
+local-materials/
+private/
+exports/
+backups/
+.env
+.env.*
+!.env.example
+.clasp.json
+.clasprc.json

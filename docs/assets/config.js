@@ -17,8 +17,8 @@ window.QUIZ_CONFIG = {
   endpoint: '',
 
   /* 什麼時候要學生填班級／座號／姓名
-     'exam'   測驗模式才要（預設）
-     'always' 練習模式也要
+     'exam'   測驗模式才要
+     'always' 練習模式也要（預設）
      'never'  一律不要（此時就算有 endpoint 也只會回報匿名資料）  */
   requireIdentity: 'always',
 
