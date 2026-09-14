@@ -1,6 +1,9 @@
 .DS_Store
 Thumbs.db
 node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
 __pycache__/
 local-materials/
 private/

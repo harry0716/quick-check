@@ -1,0 +1,12 @@
+{
+  "name": "quick-check-grades",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-14",
+  "workers_dev": true,
+  "account_id": "38dac6f4cba2f7ba1f2460f9cbc1627c",
+  "d1_databases": [{"binding":"DB","database_name":"quick-check-grades","database_id":"6c13b6c4-57b0-4b8e-9421-ebf38b7db55c"}],
+  "observability": { "enabled": false },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://harry0716.github.io,http://127.0.0.1:8765,http://localhost:8765"
+  }
+}

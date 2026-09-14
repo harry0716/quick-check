@@ -10,11 +10,11 @@ window.QUIZ_CONFIG = {
 
   /* 成績回報端點 ---------------------------------------------------
      留白＝純練習模式，學生只看得到自己的成績，你收不到資料。
-     要收成績時，把 Apps Script 網頁應用程式的網址貼在這裡，例如：
-       endpoint: 'https://script.google.com/macros/s/AKfycb..../exec',
-     部署步驟見 README.md。
+     目前使用 Cloudflare Worker + D1，部署步驟見 collector/cloudflare/README.md。
+     教師檢視碼不可放進此檔案。
   ------------------------------------------------------------------ */
-  endpoint: '',
+  endpoint: 'https://quick-check-grades.harry0716.workers.dev/',
+  transport: 'json',
 
   /* 什麼時候要學生填班級／座號／姓名
      'exam'   測驗模式才要

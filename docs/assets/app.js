@@ -463,11 +463,12 @@
       if (done) return;
       done = true;
       cleanup();
+      if (S !== session) return;
       $('sendmsg').className = 'sendmsg err';
       $('sendmsg').textContent = '回報逾時，請把下面的回報碼複製給老師。';
       $('sendbtn').disabled = false;
       $('sendbtn').textContent = '再試一次';
-    }, 12000);
+    }, 22000);
 
     function cleanup() {
       session.sending = false;
@@ -505,8 +506,13 @@
       $('sendbtn').disabled = false;
       $('sendbtn').textContent = '再試一次';
     };
-    script.src = url;
-    document.body.appendChild(script);
+    if (CFG.transport === 'json') {
+      delete q.callback;
+      window.quizCollectorRequest(q).then(function(res){ if(window[cb])window[cb](res); });
+    } else {
+      script.src = url;
+      document.body.appendChild(script);
+    }
   }
 
   /* ---------------- 題庫瀏覽 ---------------- */

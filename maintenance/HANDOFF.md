@@ -17,8 +17,8 @@
 - PR #1 已於 2026-09-14 合併到 `main`，合併提交 `98531bd81f5c07554f5a70dca89d657d195eb52b`。本機已切回 `main`，可直接接續維護。
 - GitHub Pages 已確認該合併提交發布成功（`built`，無錯誤）；正式網站已更新教師後台與 18 週入口。
 - 題庫代號 `cchs-ipas-2026` 保留以維持既有學生連結與成績資料識別。
-- Google Apps Script 部署網址：**尚未提供／設定**；`docs/assets/config.js` 的 `endpoint` 目前為空。
-- Google 成績試算表 ID／網址及教師檢視碼：**尚未取得**，不要臆造或放進公開 GitHub。
+- 成績接收改用 Cloudflare：`https://quick-check-grades.harry0716.workers.dev/`，前端使用 JSON POST。
+- D1 資料庫 `quick-check-grades`，教師檢視碼存於本機 `private/cloudflare-teacher-key.txt` 及 Worker secret；不得提交私人檔案。
 
 ## 已完成
 
@@ -31,7 +31,33 @@
 - 原始題庫已尋回，150 題與線上題庫逐欄一致。完整原始資料留在本機 `local-materials/`，工作主檔在 `data/`。
 - 原教案的第 16–18 週入口補齊；網站產生與預覽路徑不再依賴外部課程目錄。
 
-## 下一步：啟用成績收集
+## Cloudflare 部署進度（2026-09-14）
+
+- 使用者已啟用並授權操作 Cloudflare，改用 Workers + D1，停止 Google 授權排查。未修改原有 `quiet-brook-9a1e` Worker。
+- 已建立專用 D1、資料表與唯一索引，部署 `quick-check-grades`，設定私人教師碼。服務目前已通過本機網頁實際交卷；正式 Pages 發布與線上測驗驗證接續中。
+- 保留既有學生連結、18 週與成績分類；新增 JSON POST、教師 Authorization 標頭、500 筆分頁、來源限制及服務端格式驗證。同一作答內容重送去重，不同內容拒收。
+- 11 項 Node 測試與 150 題／18 週搬移重建通過。維護指令與備份方式見 `collector/cloudflare/README.md`。
+- 成績不自動寫入 Google 試算表，教師使用網站查詢及 CSV 匯出。沒有舊版逐題統計工作表。
+
+## Google 排查歷史（已停用此方案，不是待辦）
+
+### 本次接續進度（2026-09-14）
+
+- 最新狀態：使用者回報「原工具複製測試」也遭相同封鎖；停止繼續複製或原樣重試授權。
+- 已成功建立專用標準 Cloud 專案 `quick-check-grades`（名稱 Quick Check Grades），確認有建立成功通知與專案頁面。此更新取代下方早先「Cloud 未確認建立」狀態。
+- Google Auth Platform 建立品牌流程已填應用名稱、支援帳號，選擇外部測試模式，目前停在聯絡資訊步驟；尚未建立品牌、加入測試使用者或連結 Apps Script。
+- 自動核准審查拒絕在聯絡信箱欄填入本人 Gmail，原因為欠缺明確資料傳輸授權。待使用者同意提交個人信箱至本專案 Google Cloud OAuth 聯絡設定後接續；不得改用其他方式繞過拒絕。專案編號與設定入口存於私人部署紀錄。
+
+- 授權排查更新：使用者提供截圖，原獨立專案顯示「系統已封鎖這個應用程式」，沒有進階繼續選項；使用者回報換瀏覽器後仍失敗，根因尚未確認。原專案要求 1 個 `spreadsheets` OAuth 範圍，Cloud 專案為預設。
+- 依使用者記得的複製方式，找到「彰化一整天 Blog」題庫產生器，建立私人測試副本「Quick Check 成績接收（原工具複製測試）」。已替換為現有接收程式、重載並核對與本機一致，目前停在 `setup` 的「需要授權」，待本人測試；不能宣稱複製已解決封鎖。
+- 使用者最初提供的是表單回覆表；其排查副本沒有原匯入程式，不可拿來當正式收件表。各副本與原工具入口記錄於 `private/collector-deployment.md`，既有原始表與程式未修改。
+- Cloud 備案：曾送出建立「Quick Check Grades」的操作，但未取得成功證據、全部專案清單也未出現；沒有切換 Apps Script 的 Cloud 專案。後續應先核對狀態再決定是否續建。
+
+- 已在老師登入中的 Google 帳號建立「學後即測 Quick Check 成績接收」Apps Script 專案；入口存於本機 `private/collector-deployment.md`，請接續該專案，不要重複建立。
+- 已儲存 `collector/Code.gs`，從編輯器全選複製核對與本機內容一致（僅正規化換行）。
+- 已選取並執行 `setup`，目前停在 Google「需要授權」視窗，待帳號本人審查授權；尚未確認建立試算表及教師檢視碼。
+- 尚未部署網頁應用程式、設定 endpoint 或完成跨裝置驗證，正式成績收集仍未啟用。
+- 本次搬移重建（150 題／18 週）及六項 Node 測試全部通過。
 
 1. 由老師的 Google 帳號建立 Apps Script 專案，使用 `collector/Code.gs`。
 2. 執行 `setup` 並由帳號本人完成必要 Google 授權。保管執行紀錄中的試算表網址與教師檢視碼。
@@ -48,14 +74,14 @@
 - 尚未匯入班級名冊，缺交要另行核對；尚未自動計算學期加權總成績。
 - 舊本機 localStorage 成績沒有集中備份，不能自動補回。
 - 原始完整教案含學期資訊與歷史敘述；它是封存參考，考試規則／費用／日期需日後重新核對。
-- 教師端使用 Apps Script JSONP 相容原架構；查詢碼不要分享、不要記錄到公開文件。
+- 正式教師端使用 Cloudflare JSON POST；保留舊版 JSONP 相容路徑。查詢碼不要分享、不要記錄到公開文件。
 
 ## 維護操作
 
 - 改題目：編輯 `data/bank.json`（保留既有題號）→ `python build_site.py` → 檢查 `docs/banks/` 差異 → 測試。
 - 改 18 週名稱：編輯 `data/weeks.json`；W16–W18 範圍及題數在 `build_site.py`。
 - 改介面：`docs/index.html`、`docs/assets/app.js`、`teacher.js`、`styles.css`。
-- 改成績接收：`collector/Code.gs`；需更新 Apps Script 部署，GitHub Pages 不會替你部署 Google 程式。
+- 改成績接收：`collector/cloudflare/worker.mjs` 後重新部署 Worker；GitHub Pages 只發布前端。若修改備案 `collector/Code.gs`，仍需另更新 Google 部署才生效。
 - Word／Excel 衍生檔：看 `tools/README.md`；已有原始成品可用。
 - 遷移後不要重新在學期課程資料夾建立第二份可編輯主檔。
 

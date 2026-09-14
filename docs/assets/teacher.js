@@ -15,10 +15,10 @@
         '<label>模式 <select id="grade-mode"><option value="">全部模式</option><option value="practice">練習</option><option value="exam">測驗</option></select></label>' +
         '<label>採計方式 <select id="grade-policy"><option value="all">每次作答</option><option value="first">首次成績</option><option value="latest">最新成績</option><option value="best">最高成績</option></select></label></div>' +
         '<p id="grade-summary"></p><button class="btn ghost" id="grade-export" disabled>匯出目前成績 CSV</button><div class="grade-scroll"><table><thead><tr><th>時間</th><th>班級</th><th>座號</th><th>姓名</th><th>測驗</th><th>評量</th><th>模式</th><th>答對／題數</th><th>分數</th><th>秒數</th></tr></thead><tbody id="grade-rows"></tbody></table></div>';
-      $('grade-status').textContent = window.QUIZ_CONFIG.endpoint ? '請輸入教師檢視碼載入成績。' : '尚未連接成績接收端，目前無法集中收集或查詢成績。請依 README 完成 Apps Script 部署。';
+      $('grade-status').textContent = window.QUIZ_CONFIG.endpoint ? '請輸入教師檢視碼載入成績。' : '尚未連接成績接收端，目前無法集中收集或查詢成績。請依 README 完成成績服務部署。';
       $('grade-load').disabled = !window.QUIZ_CONFIG.endpoint;
       $('grade-load').onclick = load;
-      $('grade-clear').onclick = function(){ generation++; rows=[]; $('grade-key').value=''; options(); render(); $('grade-status').textContent='已清除成績畫面。'; };
+      $('grade-clear').onclick = function(){ generation++; rows=[]; $('grade-load').disabled=!window.QUIZ_CONFIG.endpoint; $('grade-key').value=''; options(); render(); $('grade-status').textContent='已清除成績畫面。'; };
       ['grade-class','grade-student','grade-set','grade-type','grade-mode','grade-policy'].forEach(function(id){ $(id).oninput=render; });
       $('grade-export').onclick = exportCSV;
       $('link-assessment').onchange = renderLinks;
@@ -48,6 +48,25 @@
     var key=$('grade-key').value.trim(); if(!key){ $('grade-status').textContent='請先輸入教師檢視碼。'; return; }
     rows=[]; render(); $('grade-load').disabled=true; $('grade-status').textContent='載入中…';
     var requestGeneration=++generation;
+    if(window.QUIZ_CONFIG.transport==='json'){
+      (async function(){
+        var collected=[], after=0, snapshot;
+        try {
+          do {
+            var res=await window.quizCollectorRequest({action:'grades',bank:bank.id,after:after,snapshot:snapshot},key);
+            if(requestGeneration!==generation)return;
+            if(!res || !res.ok)throw new Error((res && res.error)||'無法載入成績。');
+            collected=collected.concat(res.rows || []);
+            snapshot=res.snapshot;
+            if(res.next!=null && (!Number.isSafeInteger(res.next) || res.next<=after))throw new Error('成績分頁格式不正確。');
+            after=res.next;
+          } while(after!=null);
+          rows=collected; options(); render(); $('grade-status').textContent='已載入 '+rows.length+' 筆紀錄；更新時間 '+new Date().toLocaleString('zh-TW')+'。';
+        } catch(e){if(requestGeneration===generation)$('grade-status').textContent=e.message;}
+        finally {if(requestGeneration===generation)$('grade-load').disabled=false;}
+      })();
+      return;
+    }
     var cb='qc_grades_'+Date.now(), script=document.createElement('script'), done=false;
     var timer=setTimeout(function(){finish({ok:false,error:'連線逾時，請重試。'});},20000);
     function finish(res){
