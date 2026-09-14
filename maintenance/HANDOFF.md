@@ -13,6 +13,9 @@
 - 正式網址：`https://harry0716.github.io/quick-check/`；Pages 使用 `docs/`。
 - 改版 PR：https://github.com/harry0716/quick-check/pull/1
 - 初版教師後台提交：`c1c003e76633de41c4d04f0d3c0e5b67eacf75d5`。
+- 獨立化提交：`76b650f6bf88281b0ac323cd6692c12782a122a7`。
+- PR #1 已於 2026-09-14 合併到 `main`，合併提交 `98531bd81f5c07554f5a70dca89d657d195eb52b`。本機已切回 `main`，可直接接續維護。
+- GitHub Pages 已確認該合併提交發布成功（`built`，無錯誤）；正式網站已更新教師後台與 18 週入口。
 - 題庫代號 `cchs-ipas-2026` 保留以維持既有學生連結與成績資料識別。
 - Google Apps Script 部署網址：**尚未提供／設定**；`docs/assets/config.js` 的 `endpoint` 目前為空。
 - Google 成績試算表 ID／網址及教師檢視碼：**尚未取得**，不要臆造或放進公開 GitHub。
@@ -61,3 +64,5 @@
 六項 Node 測試涵蓋成績格式、教師驗證、去重、採計分組、輸出轉義與非同步清除。搬移測試只複製主檔與產生器到另一個目錄，從不同工作目錄重建，核對 150 題／18 週及輸出一致性。
 
 GitHub 最新上線狀態以遠端 `main` 和 Pages 部署為準；本文件不保存私人學生成績。
+
+完整 Git 歷史另備份於本機 `backups/quick-check-2026-09-14.bundle`，已通過 `git bundle verify`。日後新提交仍以 `.git/` 與 GitHub 為準；bundle 是當日快照。29 份原始資料另以 `local-materials/檔案清冊.json` 保存完整性清冊。
