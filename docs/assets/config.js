@@ -20,7 +20,7 @@ window.QUIZ_CONFIG = {
      'exam'   測驗模式才要（預設）
      'always' 練習模式也要
      'never'  一律不要（此時就算有 endpoint 也只會回報匿名資料）  */
-  requireIdentity: 'exam',
+  requireIdentity: 'always',
 
   /* 頁尾說明 */
   footer: '題目依課程教學內容自編，供課堂即時檢核使用。'

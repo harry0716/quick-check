@@ -29,11 +29,16 @@ var PROP_KEY = 'QUICKCHECK_SHEET_ID';
 
 var HEADERS = ['時間戳記', '課程代號', '課程名稱', '測驗代號', '測驗名稱', '模式',
   '班級', '座號', '姓名', '得分', '題數', '百分比', '作答秒數', '是否逾時',
-  '答錯題號', '作答對錯序列', '本次出題題號'];
+  '答錯題號', '作答對錯序列', '本次出題題號', '評量類別', '作答識別碼'];
 
 /** 步驟 2：建立試算表並授權 */
 function setup() {
   var ss = _sheet();
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('QUICKCHECK_TEACHER_KEY')) {
+    props.setProperty('QUICKCHECK_TEACHER_KEY', Utilities.getUuid());
+  }
+  Logger.log('教師檢視碼（請保密，不要貼進公開設定檔）：' + props.getProperty('QUICKCHECK_TEACHER_KEY'));
   Logger.log('成績試算表已就緒：');
   Logger.log(ss.getUrl());
   Logger.log('接著回到「部署 → 新增部署作業 → 網頁應用程式」，存取權限選「所有人」。');
@@ -59,6 +64,7 @@ function _sheet() {
     log.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#E4EAE5');
     log.setFrozenRows(1);
   }
+  log.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   if (!ss.getSheetByName('逐題統計')) {
     var st = ss.insertSheet('逐題統計');
     st.appendRow(['題號', '出現次數', '答錯次數', '答錯率']);
@@ -81,20 +87,39 @@ function doGet(e) {
   var p = (e && e.parameter) || {};
   var cb = p.callback;
   try {
+    if (p.action === 'grades') {
+      var expected = PropertiesService.getScriptProperties().getProperty('QUICKCHECK_TEACHER_KEY');
+      if (!expected || p.key !== expected) return _reply({ok:false,error:'教師檢視碼不正確，或尚未執行 setup。'}, cb);
+      var records = _sheet().getSheetByName('作答紀錄').getDataRange().getValues().slice(1);
+      return _reply({ok:true, rows:records.filter(function(r) {return !p.bank || r[1] === p.bank;})}, cb);
+    }
+    if (p.action) return _reply({ok:false,error:'未知操作'}, cb);
     if (!p.bank || !p.set) return _reply({ ok: false, error: '缺少必要參數' }, cb);
+    var total = Number(p.total), score = Number(p.score), sec = Number(p.sec);
+    if (!Number.isInteger(total) || total < 1 || total > 1000 || !Number.isInteger(score) || score < 0 || score > total || !Number.isFinite(sec) || sec < 0 || !/^[01]+$/.test(p.pattern || '') || p.pattern.length !== total || String(p.ids || '').split(',').length !== total || (p.pattern.match(/1/g) || []).length !== score) {
+      return _reply({ok:false,error:'成績格式不正確'}, cb);
+    }
+    if (p.mode !== 'exam' && p.mode !== 'practice') return _reply({ok:false,error:'作答模式不正確'}, cb);
+    if (p.assessment && !/^(class|midterm|final)$/.test(p.assessment)) return _reply({ok:false,error:'評量類別不正確'}, cb);
 
     var lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
       var ss = _sheet();
+      var log = ss.getSheetByName('作答紀錄');
+      if (p.attempt && log.getLastRow() > 1) {
+        var found = log.getRange(2, 19, log.getLastRow()-1, 1).createTextFinder(String(p.attempt)).matchEntireCell(true).findNext();
+        if (found) return _reply({ok:true,duplicate:true}, cb);
+      }
       ss.getSheetByName('作答紀錄').appendRow([
-        new Date(), p.bank, p.bankTitle || '', p.set, p.setLabel || '', p.mode || '',
-        p.cls || '', p.seat || '', p.name || '',
-        Number(p.score || 0), Number(p.total || 0), Number(p.pct || 0),
-        Number(p.sec || 0), p.timedOut === '1' ? '逾時' : '',
-        p.wrong || '', p.pattern || '', p.ids || ''
+        new Date(), _text(p.bank), _text(p.bankTitle), _text(p.set), _text(p.setLabel), p.mode,
+        _text(p.cls), _text(p.seat), _text(p.name),
+        score, total, Math.round(score / total * 100),
+        sec, p.timedOut === '1' ? '逾時' : '',
+        _text(p.wrong), _text(p.pattern), _text(p.ids), p.assessment || 'legacy', _text(p.attempt)
       ]);
-      _updateItemStats(ss, p.ids, p.pattern);
+      // 作答紀錄是成績依據；統計更新失敗不要求學生再次交卷。
+      try { _updateItemStats(ss, p.ids, p.pattern); } catch (statsError) { console.error(statsError); }
     } finally {
       lock.releaseLock();
     }
@@ -102,6 +127,11 @@ function doGet(e) {
   } catch (err) {
     return _reply({ ok: false, error: String(err) }, cb);
   }
+}
+
+function _text(value) {
+  var s = String(value == null ? '' : value).slice(0, 10000);
+  return /^[=+@\-\t\r\n]/.test(s) ? "'" + s : s;
 }
 
 function doPost(e) {
